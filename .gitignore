@@ -1,0 +1,9 @@
+target/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+*.log
+# 本地密钥配置，永远不要提交
+application-local.yml
+.env

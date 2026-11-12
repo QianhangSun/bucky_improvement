@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 本项目专用的 Maven 配置：直接从 Maven Central 下载，不走全局 ~/.m2/settings.xml 里的公司镜像 -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+  <mirrors>
+    <mirror>
+      <id>central-direct</id>
+      <mirrorOf>*</mirrorOf>
+      <url>https://repo1.maven.org/maven2</url>
+    </mirror>
+  </mirrors>
+  <!-- 本机走 127.0.0.1:17891 的代理上网；Maven 不会自动读系统代理，要在这里写明 -->
+  <proxies>
+    <proxy><id>local-https</id><active>true</active><protocol>https</protocol><host>127.0.0.1</host><port>17891</port></proxy>
+    <proxy><id>local-http</id><active>true</active><protocol>http</protocol><host>127.0.0.1</host><port>17891</port></proxy>
+  </proxies>
+</settings>
