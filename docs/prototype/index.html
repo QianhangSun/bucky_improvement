@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bucky 成长台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* 布局：左侧固定导航 + 右侧工作区；每个模块一屏，用 hash 切换。意象：笔记本 + 荧光笔 */
+:root {
+  --bg: #f5f6f9;
+  --surface: #ffffff;
+  --surface-2: #eceef4;
+  --line: #d9dde7;
+  --ink: #1b2233;
+  --ink-2: #5a6378;
+  --brand: #23407a;        /* 墨蓝 */
+  --brand-soft: #e3e9f6;
+  --mark: #f6d34a;         /* 荧光笔黄 */
+  --mark-soft: #fbf0bd;
+  --ok: #2f8a5b; --ok-soft: #dcf1e5;
+  --warn: #b7791f; --warn-soft: #f8ead2;
+  --bad: #b84040; --bad-soft: #f6dddd;
+  --font-display: "Noto Serif SC", "Songti SC", serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151d; --surface: #1a1f2a; --surface-2: #232937; --line: #313849;
+    --ink: #e6e9f0; --ink-2: #99a2b5; --brand: #8fa9e0; --brand-soft: #24304a;
+    --mark: #e9c63c; --mark-soft: #3d3619;
+    --ok: #62c08d; --ok-soft: #1c3428; --warn: #e0a84e; --warn-soft: #3a2e19; --bad: #e07b7b; --bad-soft: #3d2222;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151d; --surface: #1a1f2a; --surface-2: #232937; --line: #313849;
+  --ink: #e6e9f0; --ink-2: #99a2b5; --brand: #8fa9e0; --brand-soft: #24304a;
+  --mark: #e9c63c; --mark-soft: #3d3619;
+  --ok: #62c08d; --ok-soft: #1c3428; --warn: #e0a84e; --warn-soft: #3a2e19; --bad: #e07b7b; --bad-soft: #3d2222;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.6 var(--font-body); }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font: 700 24px/1.3 var(--font-display); }
+h2 { font: 600 16px/1.4 var(--font-body); }
+h3 { font: 600 14px/1.4 var(--font-body); }
+p { margin: 0; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.muted { color: var(--ink-2); }
+.small { font-size: 12px; }
+.label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; }
+.mark { background: linear-gradient(transparent 55%, var(--mark-soft) 55%); }
+
+/* 应用框架 */
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.side { background: var(--surface); border-right: 1px solid var(--line); padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+.logo { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; }
+.logo-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--brand); color: var(--surface); display: grid; place-items: center; font: 700 15px var(--font-display); position: relative; }
+.logo-mark::after { content: ""; position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 3px; background: var(--mark); }
+.logo b { font: 700 16px var(--font-display); display: block; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; }
+.nav a:hover { background: var(--surface-2); color: var(--ink); }
+.nav a.on { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+.nav .ico { width: 18px; text-align: center; font-family: var(--font-mono); font-size: 12px; }
+.nav-sep { height: 1px; background: var(--line); margin: 10px 10px; }
+.side-foot { margin-top: auto; padding: 10px; display: grid; gap: 8px; }
+.theme-btn { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+
+.main { min-width: 0; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 12px; display: grid; gap: 20px; }
+.page-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.page-head .sub { color: var(--ink-2); margin-top: 4px; }
+.proto-note { font-size: 12px; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 2px 8px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.grid { display: grid; gap: 16px; }
+.g-2 { grid-template-columns: 1.4fr 1fr; }
+.g-3 { grid-template-columns: 220px 1fr 300px; }
+.g-res { grid-template-columns: 200px 1fr 320px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; }
+.btn:hover { border-color: var(--brand); }
+.btn.primary { background: var(--brand); color: var(--surface); border-color: var(--brand); }
+.btn.ai::before { content: "✦ "; color: var(--mark); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); white-space: nowrap; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.brand { background: var(--brand-soft); color: var(--brand); }
+.chip.tool { font-family: var(--font-mono); font-size: 11px; border: 1px dashed var(--line); background: transparent; }
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--brand); border-radius: 3px; }
+.list { display: grid; gap: 0; }
+.list > * { padding: 10px 0; border-top: 1px solid var(--line); }
+.list > *:first-child { border-top: 0; }
+input[type="text"], textarea, select { width: 100%; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+textarea { resize: vertical; min-height: 64px; }
+
+/* 页面切换 */
+.view { display: none; }
+.view.on { display: grid; }
+
+/* 首页 */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat b { font: 600 26px/1.1 var(--font-mono); font-variant-numeric: tabular-nums; display: block; margin-top: 6px; }
+.task { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: start; }
+.task input { margin-top: 4px; accent-color: var(--brand); }
+.task.done .t { text-decoration: line-through; color: var(--ink-2); }
+.tip { background: var(--mark-soft); border-radius: 10px; padding: 14px; display: grid; gap: 6px; }
+.funnel { display: grid; gap: 8px; }
+.funnel-row { display: grid; grid-template-columns: 72px 1fr 28px; gap: 10px; align-items: center; font-size: 13px; }
+.funnel-row .bar { height: 14px; border-radius: 4px; }
+.funnel-row .bar > i { border-radius: 4px; }
+.week-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: end; height: 120px; padding-top: 8px; border-bottom: 1px solid var(--line); }
+.week-bars div { background: var(--brand); border-radius: 4px 4px 0 0; position: relative; }
+.week-bars div.today { background: var(--mark); }
+.week-bars div span { position: absolute; top: -18px; left: 0; right: 0; text-align: center; font: 11px var(--font-mono); color: var(--ink-2); }
+.week-lbl { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center; font-size: 12px; color: var(--ink-2); }
+
+/* 看板 */
+.board { display: grid; grid-template-columns: repeat(6, minmax(190px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+.col { background: var(--surface-2); border-radius: 12px; padding: 10px; display: grid; gap: 8px; align-content: start; min-height: 300px; }
+.col-h { display: flex; justify-content: space-between; font-weight: 600; font-size: 13px; padding: 2px 4px; }
+.jcard { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: grid; gap: 6px; cursor: pointer; text-align: left; }
+.jcard:hover, .jcard.sel { border-color: var(--brand); }
+.jcard .co { font-size: 12px; color: var(--ink-2); }
+.jcard .ti { font-weight: 600; }
+.jdetail { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.timeline { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+.timeline > div { position: relative; padding: 0 0 14px 16px; }
+.timeline > div::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--brand); }
+.timeline > div.next::before { border-color: var(--mark); background: var(--mark); }
+
+/* 简历 */
+.ver { display: grid; gap: 6px; }
+.ver button { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 8px 10px; }
+.ver button.on { background: var(--brand-soft); border-color: var(--brand-soft); color: var(--brand); }
+.rsec { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 8px; }
+.rsec-h { display: flex; justify-content: space-between; align-items: center; }
+.hl-weak { background: var(--bad-soft); border-radius: 3px; padding: 0 2px; }
+.score-ring { width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--brand) 0 78%, var(--surface-2) 78% 100%); }
+.score-ring b { width: 72px; height: 72px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font: 600 22px var(--font-mono); }
+.sugg { border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
+.sugg del { color: var(--ink-2); }
+.sugg ins { text-decoration: none; background: var(--ok-soft); border-radius: 3px; padding: 0 2px; }
+
+/* 计划 */
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.day { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px; text-align: center; display: grid; gap: 2px; }
+.day.on { border-color: var(--brand); background: var(--brand-soft); }
+.day b { font: 600 18px var(--font-mono); }
+.day .bar { height: 4px; }
+.tgroup { display: grid; gap: 4px; }
+.tgroup-h { display: flex; gap: 8px; align-items: center; padding-top: 6px; }
+.pomo { text-align: center; display: grid; gap: 8px; justify-items: center; }
+.pomo b { font: 500 44px/1 var(--font-mono); letter-spacing: .02em; }
+
+/* 学习 */
+.skills { display: grid; gap: 10px; }
+.skill { display: grid; grid-template-columns: 120px 1fr 64px; gap: 12px; align-items: center; }
+.lv { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.lv i { height: 10px; border-radius: 2px; background: var(--surface-2); }
+.lv i.cur { background: var(--brand); }
+.lv i.tgt { background: transparent; outline: 1.5px dashed var(--brand); outline-offset: -1.5px; }
+.heat-wrap { overflow-x: auto; }
+.heat { display: grid; grid-template-rows: repeat(7, 12px); grid-auto-flow: column; grid-auto-columns: 12px; gap: 3px; }
+.heat i { border-radius: 2px; background: var(--surface-2); }
+.heat i.l1 { background: color-mix(in srgb, var(--brand) 30%, var(--surface-2)); }
+.heat i.l2 { background: color-mix(in srgb, var(--brand) 60%, var(--surface-2)); }
+.heat i.l3 { background: var(--brand); }
+.heat i.l4 { background: var(--mark); }
+.legend { display: flex; gap: 3px; align-items: center; font-size: 11px; color: var(--ink-2); }
+.legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* 导师 */
+.mentor { grid-template-columns: 220px 1fr 280px; min-height: 640px; }
+.chat { display: grid; grid-template-rows: 1fr auto; gap: 12px; }
+.msgs { display: grid; gap: 14px; align-content: start; }
+.msg { max-width: 88%; display: grid; gap: 8px; }
+.msg.me { justify-self: end; background: var(--brand); color: var(--surface); padding: 10px 14px; border-radius: 14px 14px 4px 14px; }
+.msg.ai { padding: 2px 0; }
+.msg.ai .who { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+.cite { font-size: 11px; font-family: var(--font-mono); color: var(--brand); background: var(--brand-soft); border-radius: 4px; padding: 0 4px; vertical-align: 1px; }
+.confirm { border: 1.5px solid var(--mark); border-radius: 12px; padding: 12px; display: grid; gap: 8px; background: var(--surface); }
+.confirm ul { margin: 0; padding-left: 18px; }
+.composer { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.ctx { display: grid; gap: 8px; }
+.ctx label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.ctx input { accent-color: var(--brand); }
+.modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.modes button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 12px; }
+.modes button.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.sess { display: grid; gap: 2px; }
+.sess button { text-align: left; background: transparent; border: 0; border-radius: 8px; padding: 8px; }
+.sess button.on { background: var(--surface-2); font-weight: 600; }
+pre.prof { margin: 0; white-space: pre-wrap; font: 11.5px/1.6 var(--font-mono); background: var(--surface-2); border-radius: 8px; padding: 10px; color: var(--ink-2); }
+
+/* 总结 */
+.tabs { display: inline-flex; background: var(--surface-2); border-radius: 8px; padding: 3px; gap: 2px; }
+.tabs button { border: 0; background: transparent; border-radius: 6px; padding: 4px 14px; }
+.tabs button.on { background: var(--surface); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.report { max-width: 72ch; display: grid; gap: 14px; }
+.report h2 { font: 700 20px var(--font-display); }
+.report h3 { border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-top: 6px; }
+.report ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.src { font: 11px var(--font-mono); color: var(--ink-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+table.t { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.t th, table.t td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+table.t th { font-weight: 500; color: var(--ink-2); font-size: 12px; }
+.tbl { overflow-x: auto; }
+
+/* 设置 */
+.kv { display: grid; grid-template-columns: 140px 1fr; gap: 10px 16px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--ink-2); }
+.dot.ok { background: var(--ok); } .dot.off { background: var(--line); }
+
+@media (max-width: 1100px) {
+  .g-3, .g-res, .mentor { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 820px) {
+  .app { grid-template-columns: 1fr; }
+  .side { position: sticky; top: 0; height: auto; flex-direction: row; overflow-x: auto; padding: 8px max(12px, env(safe-area-inset-left, 0px)); z-index: 5; border-right: 0; border-bottom: 1px solid var(--line); }
+  .logo, .nav-sep, .side-foot .muted { display: none; }
+  .nav { display: flex; gap: 4px; }
+  .nav a { white-space: nowrap; }
+  .side-foot { margin: 0; padding: 0 0 0 8px; }
+  .g-2, .jdetail { grid-template-columns: 1fr; }
+  .wrap { padding-inline: 0; }
+  .skill { grid-template-columns: 90px 1fr 52px; }
+  .kv { grid-template-columns: 1fr; gap: 4px; }
+}
+@media (max-width: 480px) { .stats { grid-template-columns: 1fr 1fr; } .days { gap: 4px; } .day { padding: 6px 2px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="logo"><div class="logo-mark">B</div><div><b>Bucky 成长台</b><span class="small muted">求职 · 学习 · 复盘</span></div></div>
+    <nav class="nav" id="nav">
+      <a href="#dashboard" data-v="dashboard"><span class="ico">◐</span>今日总览</a>
+      <a href="#jobs" data-v="jobs"><span class="ico">▤</span>工作信息</a>
+      <a href="#resume" data-v="resume"><span class="ico">▯</span>个人简历</a>
+      <a href="#plan" data-v="plan"><span class="ico">☐</span>每日计划</a>
+      <a href="#learning" data-v="learning"><span class="ico">▲</span>学习进度</a>
+      <a href="#mentor" data-v="mentor"><span class="ico">✦</span>导师</a>
+      <a href="#summary" data-v="summary"><span class="ico">≡</span>总结归纳</a>
+      <span class="nav-sep"></span>
+      <a href="#prefs" data-v="prefs"><span class="ico">⚙</span>设置</a>
+    </nav>
+    <div class="side-foot">
+      <button class="theme-btn" id="themeBtn" type="button">切换主题</button>
+      <span class="small muted">原型 v0.1 · 数据均为示例</span>
+    </div>
+  </aside>
+
+  <main class="main">
+  <div class="wrap">
+
+  <!-- ===== 今日总览 ===== -->
+  <section class="view" id="v-dashboard">
+    <div class="page-head">
+      <div><h1>早上好，Bucky</h1><p class="sub">11 月 12 日 星期四 · 求职第 <span class="num">23</span> 天</p></div>
+      <div class="row"><span class="proto-note">示例数据</span><button class="btn primary" type="button">+ 记一笔学习</button></div>
+    </div>
+    <div class="stats">
+      <div class="panel stat"><span class="label">今日计划</span><b>2 / 5</b><div class="bar"><i style="width:40%"></i></div></div>
+      <div class="panel stat"><span class="label">本周学习</span><b>11.5 h</b><span class="small muted">目标 15h · 还差 3.5h</span></div>
+      <div class="panel stat"><span class="label">进行中岗位</span><b>12</b><span class="small muted">面试中 2 · 待跟进 3</span></div>
+      <div class="panel stat"><span class="label">待复习题目</span><b>8</b><span class="small muted">JVM 5 · 并发 3</span></div>
+    </div>
+    <div class="grid g-2">
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-head"><h2>今日计划</h2><a class="small" href="#plan">查看全部 →</a></div>
+          <div class="list">
+            <label class="task done"><input type="checkbox" checked><span class="t">LeetCode：二叉树层序遍历 ×2</span><span class="chip">刷题 · 40m</span></label>
+            <label class="task done"><input type="checkbox" checked><span class="t">《深入理解 JVM》第 3 章：垃圾收集器</span><span class="chip">学习 · 90m</span></label>
+            <label class="task"><input type="checkbox"><span class="t">准备明天二面：项目难点 STAR 讲述 ×3</span><span class="chip warn">面试 · 60m</span></label>
+            <label class="task"><input type="checkbox"><span class="t">Spring AI：实现 QuestionAnswerAdvisor demo</span><span class="chip">学习 · 90m</span></label>
+            <label class="task"><input type="checkbox"><span class="t">跟进：云栈科技 HR 回复薪资范围</span><span class="chip brand">求职 · 自动带入</span></label>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>本周学习时长</h2><span class="small muted">小时</span></div>
+          <div class="week-bars">
+            <div style="height:45%"><span>1.8</span></div><div style="height:70%"><span>2.8</span></div><div style="height:62%"><span>2.5</span></div><div class="today" style="height:55%"><span>2.2</span></div><div style="height:0"></div><div style="height:0"></div><div style="height:0"></div>
+          </div>
+          <div class="week-lbl"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="tip">
+          <div class="row"><b>✦ 导师晨间建议</b><span class="chip">基于近 7 天数据</span></div>
+          <p>明天 14:00 是星河金融二面，JD 里 <span class="mark">JVM 调优</span> 和 <span class="mark">分布式事务</span> 是重点，而你这两项都是 2/5。今天建议把 Spring AI demo 挪到周末，先做两件事：</p>
+          <p>① 用 30 分钟过一遍 G1 和 ZGC 的对比笔记；② 把“订单系统超卖”项目按 STAR 讲一遍，录音回听。</p>
+          <div class="row"><button class="btn" type="button">调整今日计划</button><a class="btn" href="#mentor">和导师聊聊</a></div>
+        </div>
+        <div class="panel">
+          <h2>日程</h2>
+          <div class="list">
+            <div class="row" style="justify-content:space-between"><span><b>明天 14:00</b> 星河金融 · 二面（技术）</span><span class="chip warn">1 天后</span></div>
+            <div class="row" style="justify-content:space-between"><span><b>11-15 23:59</b> 北辰物流 · 在线测评截止</span><span class="chip">3 天后</span></div>
+            <div class="row" style="justify-content:space-between"><span><b>11-18 10:00</b> 云栈科技 · HR 面</span><span class="chip">6 天后</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>求职漏斗</h2><span class="small muted">本轮累计</span></div>
+          <div class="funnel">
+            <div class="funnel-row"><span>收藏</span><div class="bar"><i style="width:100%"></i></div><span class="num">17</span></div>
+            <div class="funnel-row"><span>已投递</span><div class="bar"><i style="width:82%"></i></div><span class="num">14</span></div>
+            <div class="funnel-row"><span>笔试/测评</span><div class="bar"><i style="width:41%"></i></div><span class="num">7</span></div>
+            <div class="funnel-row"><span>面试</span><div class="bar"><i style="width:24%"></i></div><span class="num">4</span></div>
+            <div class="funnel-row"><span>Offer</span><div class="bar"><i style="width:6%;background:var(--ok)"></i></div><span class="num">1</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 工作信息 ===== -->
+  <section class="view" id="v-jobs">
+    <div class="page-head">
+      <div><h1>工作信息</h1><p class="sub">拖动卡片改变状态，每次变化自动记入时间线</p></div>
+      <div class="row"><button class="btn" type="button">+ 新增岗位</button><button class="btn primary ai" type="button">粘贴 JD 解析</button></div>
+    </div>
+    <div class="row"><span class="chip brand">城市：上海</span><span class="chip">薪资：不限</span><span class="chip">标签：AI 方向</span><span class="small muted">共 17 个岗位</span></div>
+    <div class="board" id="board"></div>
+    <div class="panel" id="jobDetail"></div>
+  </section>
+
+  <!-- ===== 简历 ===== -->
+  <section class="view" id="v-resume">
+    <div class="page-head">
+      <div><h1>个人简历</h1><p class="sub">主简历是唯一来源，定制版从它派生并关联岗位</p></div>
+      <div class="row"><button class="btn" type="button">导出 PDF</button><button class="btn" type="button">导出 Markdown</button><button class="btn primary ai" type="button">AI 批改全文</button></div>
+    </div>
+    <div class="grid g-res">
+      <div class="panel">
+        <span class="label">版本</span>
+        <div class="ver">
+          <button type="button">主简历 <span class="small muted">· 11-08</span></button>
+          <button type="button" class="on">Java 后端 · 金融版<br><span class="small">关联：星河金融</span></button>
+          <button type="button">AI 应用开发版<br><span class="small muted">关联：云栈科技</span></button>
+        </div>
+        <button class="btn" type="button">+ 从主简历派生</button>
+        <span class="label">历史快照</span>
+        <div class="small muted">v5 · 今天 09:12<br>v4 · 11-10 21:40<br>v3 · 11-08 20:05</div>
+      </div>
+      <div class="panel">
+        <div class="rsec"><div class="rsec-h"><h3>基本信息</h3><span class="small muted">编辑</span></div>
+          <p>Bucky · 6 年 Java 后端 · 上海 · 期望 35–45K</p></div>
+        <div class="rsec"><div class="rsec-h"><h3>技能清单</h3><span class="small muted">从技能矩阵同步</span></div>
+          <div class="row"><span class="chip">Java 并发</span><span class="chip">Spring Boot / Cloud</span><span class="chip">MySQL 调优</span><span class="chip">Redis</span><span class="chip">Kafka</span><span class="chip">Spring AI</span><span class="chip bad">JVM 调优（JD 要求，未写）</span></div></div>
+        <div class="rsec"><div class="rsec-h"><h3>项目经历 · 订单中心重构</h3><span class="chip warn">2 条建议</span></div>
+          <p>负责订单中心从单体拆分为微服务，<span class="hl-weak">参与了分库分表方案的设计和实施</span>，引入 Kafka 实现订单状态异步通知，<span class="hl-weak">系统性能得到了明显提升</span>。</p></div>
+        <div class="rsec"><div class="rsec-h"><h3>项目经历 · 营销活动平台</h3><span class="chip ok">已优化</span></div>
+          <p>设计基于 Redis + Lua 的库存预扣方案，支撑双 11 峰值 3.2 万 QPS，超卖率为 0；活动配置上线时间从 2 天缩短到 2 小时。</p></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>JD 匹配</h2><span class="chip brand">星河金融 · 高级 Java</span></div>
+        <div class="row" style="gap:16px"><div class="score-ring"><b>78</b></div><div class="small"><div>关键词覆盖 <b class="num">14/18</b></div><div class="muted">缺：JVM 调优、分布式事务、TCC、金融合规</div></div></div>
+        <div class="sugg"><span class="small muted">订单中心 · 第 1 句</span><p><del>参与了分库分表方案的设计和实施</del></p><p><ins>主导订单库按用户 ID 分 16 库 64 表，单表数据从 2.1 亿降到 300 万</ins></p><div class="row"><button class="btn primary" type="button">采纳</button><button class="btn" type="button">忽略</button></div></div>
+        <div class="sugg"><span class="small muted">订单中心 · 第 3 句</span><p><del>系统性能得到了明显提升</del></p><p><ins>下单接口 P99 从 820ms 降到 180ms</ins> <span class="small muted">（请替换为真实数据）</span></p><div class="row"><button class="btn primary" type="button">采纳</button><button class="btn" type="button">忽略</button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 每日计划 ===== -->
+  <section class="view" id="v-plan">
+    <div class="page-head">
+      <div><h1>每日计划</h1><p class="sub">第 46 周 · 11 月 10 日 – 16 日</p></div>
+      <div class="row"><button class="btn" type="button">+ 添加任务</button><button class="btn primary ai" type="button">导师起草明日计划</button></div>
+    </div>
+    <div class="days">
+      <div class="day"><span class="small muted">一</span><b>10</b><div class="bar"><i style="width:80%"></i></div></div>
+      <div class="day"><span class="small muted">二</span><b>11</b><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="day on"><span class="small muted">三</span><b>12</b><div class="bar"><i style="width:40%"></i></div></div>
+      <div class="day"><span class="small muted">四</span><b>13</b><div class="bar"><i style="width:0"></i></div></div>
+      <div class="day"><span class="small muted">五</span><b>14</b><div class="bar"><i style="width:0"></i></div></div>
+      <div class="day"><span class="small muted">六</span><b>15</b><div class="bar"><i style="width:0"></i></div></div>
+      <div class="day"><span class="small muted">日</span><b>16</b><div class="bar"><i style="width:0"></i></div></div>
+    </div>
+    <div class="grid g-2">
+      <div class="panel">
+        <div class="panel-head"><h2>11 月 12 日</h2><span class="small muted num">已完成 2/5 · 计划 280m · 实际 135m</span></div>
+        <div class="tgroup"><div class="tgroup-h"><span class="chip warn">面试</span></div>
+          <label class="task"><input type="checkbox"><span class="t">准备明天二面：项目难点 STAR 讲述 ×3<br><span class="small muted">关联岗位：星河金融</span></span><span class="small muted num">0/60m</span></label></div>
+        <div class="tgroup"><div class="tgroup-h"><span class="chip brand">学习</span></div>
+          <label class="task done"><input type="checkbox" checked><span class="t">《深入理解 JVM》第 3 章：垃圾收集器<br><span class="small muted">技能：JVM</span></span><span class="small muted num">95/90m</span></label>
+          <label class="task"><input type="checkbox"><span class="t">Spring AI：实现 QuestionAnswerAdvisor demo<br><span class="small muted">技能：Spring AI</span></span><span class="small muted num">0/90m</span></label></div>
+        <div class="tgroup"><div class="tgroup-h"><span class="chip">刷题</span></div>
+          <label class="task done"><input type="checkbox" checked><span class="t">LeetCode：二叉树层序遍历 ×2</span><span class="small muted num">40/40m</span></label></div>
+        <div class="tgroup"><div class="tgroup-h"><span class="chip">求职</span><span class="small muted">由岗位“下一步动作”自动带入</span></div>
+          <label class="task"><input type="checkbox"><span class="t">跟进：云栈科技 HR 回复薪资范围</span><span class="small muted num">—</span></label></div>
+      </div>
+      <div class="grid">
+        <div class="panel pomo">
+          <span class="label">番茄钟</span>
+          <b class="num" id="pomo">25:00</b>
+          <span class="small muted">当前任务：准备明天二面</span>
+          <div class="row"><button class="btn primary" type="button" id="pomoBtn">开始</button><button class="btn" type="button" id="pomoReset">重置</button></div>
+        </div>
+        <div class="panel">
+          <h2>晚间复盘</h2>
+          <label for="r1" class="small muted">今天完成了什么</label><textarea id="r1">JVM 第 3 章读完，G1 的 Region 和 Mixed GC 能讲清楚了。</textarea>
+          <label for="r2" class="small muted">卡在哪</label><textarea id="r2">没有线上调优经验，面试被问到具体参数时只能背概念。</textarea>
+          <label for="r3" class="small muted">明天最重要的一件事</label><input id="r3" type="text" value="二面，讲好订单中心项目">
+          <div class="row"><span class="small muted">精力</span><span class="chip">●●●○○</span><span class="small muted">心情</span><span class="chip">●●●●○</span></div>
+          <div class="row"><button class="btn primary" type="button">保存复盘</button><button class="btn ai" type="button">让导师点评</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 学习进度 ===== -->
+  <section class="view" id="v-learning">
+    <div class="page-head">
+      <div><h1>学习进度</h1><p class="sub">目标岗位：Java 高级后端 / AI 应用开发</p></div>
+      <div class="row"><button class="btn" type="button">+ 学习资料</button><button class="btn" type="button">+ 知识卡片</button><button class="btn primary ai" type="button">生成学习路线</button></div>
+    </div>
+    <div class="grid g-2">
+      <div class="panel">
+        <div class="panel-head"><h2>技能矩阵</h2><span class="legend"><i style="background:var(--brand)"></i>当前 <i style="outline:1.5px dashed var(--brand);outline-offset:-1.5px"></i>目标</span></div>
+        <div class="skills" id="skills"></div>
+        <p class="small muted">等级：0 没接触 · 1 听过 · 2 照文档能用 · 3 独立使用 · 4 懂原理能排查 · 5 能设计能讲</p>
+      </div>
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-head"><h2>学习打卡</h2><span class="small muted num">近 12 周 · 累计 132h</span></div>
+          <div class="heat-wrap"><div class="heat" id="heat"></div></div>
+          <div class="legend">少 <i style="background:var(--surface-2)"></i><i class="l1" style="background:color-mix(in srgb,var(--brand) 30%,var(--surface-2))"></i><i style="background:color-mix(in srgb,var(--brand) 60%,var(--surface-2))"></i><i style="background:var(--brand)"></i><i style="background:var(--mark)"></i> 多（≥4h）</div>
+        </div>
+        <div class="panel">
+          <h2>学习资料</h2>
+          <div class="list">
+            <div><div class="row" style="justify-content:space-between"><span>《深入理解 Java 虚拟机》第 3 版</span><span class="small num muted">5/13 章</span></div><div class="bar"><i style="width:38%"></i></div></div>
+            <div><div class="row" style="justify-content:space-between"><span>Spring AI 官方文档 · Advisors / RAG</span><span class="small num muted">9/14 节</span></div><div class="bar"><i style="width:64%"></i></div></div>
+            <div><div class="row" style="justify-content:space-between"><span>LeetCode Hot 100</span><span class="small num muted">61/100</span></div><div class="bar"><i style="width:61%"></i></div></div>
+            <div><div class="row" style="justify-content:space-between"><span>《数据密集型应用系统设计》</span><span class="small num muted">2/12 章</span></div><div class="bar"><i style="width:17%"></i></div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>面试题库</h2><span class="small muted num">共 146 题</span></div>
+          <div class="row"><span class="chip ok">掌握 58</span><span class="chip warn">熟悉 51</span><span class="chip bad">生疏 37</span><span class="chip brand">今日待复习 8</span></div>
+          <div class="list small">
+            <div class="row" style="justify-content:space-between"><span>G1 和 CMS 的区别？什么场景选 ZGC？</span><span class="chip bad">生疏</span></div>
+            <div class="row" style="justify-content:space-between"><span>Seata AT 模式如何保证回滚？</span><span class="chip bad">生疏</span></div>
+            <div class="row" style="justify-content:space-between"><span>ThreadLocal 内存泄漏的原因</span><span class="chip warn">熟悉</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 导师 ===== -->
+  <section class="view" id="v-mentor">
+    <div class="page-head">
+      <div><h1>导师</h1><p class="sub">导师能看到你开启的数据，修改任何数据前都会先问你</p></div>
+      <div class="row"><span class="chip num">本轮 3,420 tokens · ¥0.05</span><button class="btn" type="button">+ 新会话</button></div>
+    </div>
+    <div class="grid mentor">
+      <div class="panel">
+        <span class="label">模式</span>
+        <div class="modes" id="modes"><button type="button">答疑</button><button type="button">规划</button><button type="button">复盘</button><button type="button" class="on">模拟面试</button><button type="button">简历顾问</button><button type="button">求职参谋</button></div>
+        <span class="label">会话</span>
+        <div class="sess">
+          <button type="button" class="on">星河金融二面准备</button>
+          <button type="button">本周学习规划</button>
+          <button type="button">G1 Mixed GC 答疑</button>
+          <button type="button">11-11 复盘点评</button>
+        </div>
+      </div>
+      <div class="panel chat">
+        <div class="msgs">
+          <div class="msg me">明天下午星河金融二面，帮我针对 JD 过一遍可能问到的 JVM 和分布式事务问题。</div>
+          <div class="msg ai">
+            <div class="who">✦ 导师 <span class="chip tool">⚙ getJob(#12)</span><span class="chip tool">⚙ listWeakQuestions(JVM)</span><span class="chip tool">⚙ searchKnowledge("G1 调优")</span></div>
+            <p>我看了这个岗位的 JD 和你的题库。JD 明确写了“有 JVM 调优和线上问题排查经验”<span class="cite">岗位 #12</span>，你题库里 JVM 相关有 5 题标记为生疏，其中 G1 和 ZGC 的选择你上周答错过一次<span class="cite">题库 Q-087</span>。</p>
+            <p>你的笔记里已经整理过 G1 的 Region 和 Mixed GC 流程<span class="cite">笔记 · G1 原理</span>，这部分可以讲。面试官更可能追问的是：</p>
+            <p>1. 线上 Full GC 频繁，你会怎么排查？讲清楚工具顺序（jstat → GC 日志 → jmap / MAT）。<br>2. 订单中心拆库后，下单和扣库存怎么保证一致？你用的是本地消息表还是 Seata？</p>
+            <p>我们先模拟第 1 题。你可以直接回答，我会追问并打分。</p>
+            <div class="confirm">
+              <div class="row"><b>导师想修改你的数据</b><span class="chip warn">待确认</span></div>
+              <span class="small muted">proposePlanTasks · 11 月 12 日（今天）</span>
+              <ul class="small"><li>JVM 排查流程口述练习 · 30m · 面试</li><li>整理订单中心一致性方案（画图）· 40m · 面试</li><li>Spring AI demo 顺延到 11-15</li></ul>
+              <div class="row"><button class="btn primary" type="button">确认写入</button><button class="btn" type="button">修改</button><button class="btn" type="button">不用了</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="composer"><input id="ask" type="text" placeholder="回答问题，或者问点别的…"><button class="btn primary" type="button">发送</button></div>
+      </div>
+      <div class="panel">
+        <span class="label">导师能看到的</span>
+        <div class="ctx">
+          <label><span>技能快照</span><input type="checkbox" checked></label>
+          <label><span>近 7 天计划与学习</span><input type="checkbox" checked></label>
+          <label><span>求职进展</span><input type="checkbox" checked></label>
+          <label><span>简历全文</span><input type="checkbox"></label>
+          <label><span>知识库检索（RAG）</span><input type="checkbox" checked></label>
+          <label><span>MCP：本地资料目录</span><input type="checkbox"></label>
+        </div>
+        <span class="label">学员档案预览</span>
+        <pre class="prof">目标：Java 高级后端 / AI 应用
+技能：Spring 4/5 · JVM 2/5 · 分布式 2/5
+      Spring AI 2/5 · 算法 3/5
+近7天：学习 11.5h，计划完成率 72%
+求职：进行中 12；11-13 14:00 二面
+卡点：缺 JVM 线上调优经验</pre>
+        <span class="label">本次引用</span>
+        <div class="list small">
+          <div>笔记 · G1 原理与 Mixed GC</div>
+          <div>题库 Q-087 · G1 vs ZGC</div>
+          <div>岗位 #12 · 星河金融 JD</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 总结 ===== -->
+  <section class="view" id="v-summary">
+    <div class="page-head">
+      <div><h1>总结归纳</h1><p class="sub">由导师根据你的数据生成，每条结论标注来源，可直接编辑</p></div>
+      <div class="row"><div class="tabs" id="sumTabs"><button type="button">日报</button><button type="button" class="on">周报</button><button type="button">月报</button></div><button class="btn primary ai" type="button">重新生成</button></div>
+    </div>
+    <div class="grid g-res">
+      <div class="panel">
+        <span class="label">历史周报</span>
+        <div class="ver">
+          <button type="button" class="on">第 45 周 · 11-03 至 11-09</button>
+          <button type="button">第 44 周 · 10-27 至 11-02</button>
+          <button type="button">第 43 周 · 10-20 至 10-26</button>
+        </div>
+      </div>
+      <div class="panel">
+        <article class="report">
+          <h2>第 45 周周报</h2>
+          <p class="small muted">11 月 3 日 – 11 月 9 日 · 生成于 11-09 21:30 · 已编辑</p>
+          <h3>一句话</h3>
+          <p>投递节奏稳定，拿到第一个面试机会；学习时长达标，但时间主要花在 Spring AI，JVM 短板没有推进。</p>
+          <h3>求职</h3>
+          <ul>
+            <li>新投递 5 个，累计 14 个；回复率 50%，高于上周的 33%<span class="src">看板</span></li>
+            <li>星河金融一面通过，面试官反馈“项目讲得清楚，JVM 偏弱”<span class="src">岗位 #12</span></li>
+            <li>北辰物流在线测评已收到，截止 11-15<span class="src">岗位 #9</span></li>
+          </ul>
+          <h3>学习</h3>
+          <div class="tbl"><table class="t">
+            <thead><tr><th>技能</th><th>本周时长</th><th>等级变化</th></tr></thead>
+            <tbody>
+              <tr><td>Spring AI</td><td class="num">6.5h</td><td>1 → 2</td></tr>
+              <tr><td>算法</td><td class="num">4.0h</td><td>3 → 3</td></tr>
+              <tr><td>JVM</td><td class="num">1.5h</td><td>2 → 2</td></tr>
+            </tbody>
+          </table></div>
+          <ul>
+            <li>总时长 14.2h，目标 15h<span class="src">打卡 11-03~09</span></li>
+            <li>计划完成率 78%，周三、周五未完成项都是“JVM 阅读”<span class="src">计划 11-05</span><span class="src">计划 11-07</span></li>
+          </ul>
+          <h3>问题</h3>
+          <ul><li>JVM 学习被反复推迟，而它是两个目标岗位 JD 的明确要求<span class="src">复盘 11-07</span></li></ul>
+          <h3>下周建议</h3>
+          <ul><li>每天第一个时段固定给 JVM，每次 60 分钟，周日前读完第 3–4 章</li><li>二面前完成两次模拟面试，重点讲订单中心的一致性方案</li></ul>
+        </article>
+      </div>
+      <div class="panel">
+        <span class="label">生成信息</span>
+        <div class="kv small"><span class="muted">汇总</span><span>claude-haiku-5-5</span><span class="muted">评估与建议</span><span>claude-opus-5-5</span><span class="muted">用到的数据</span><span>计划 7 天 · 打卡 19 条 · 岗位 6 个 · 复盘 6 篇</span><span class="muted">Token</span><span class="num">18,240</span></div>
+        <div class="row"><button class="btn" type="button">编辑</button><button class="btn" type="button">导出 Markdown</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 设置 ===== -->
+  <section class="view" id="v-prefs">
+    <div class="page-head"><div><h1>设置</h1><p class="sub">所有数据保存在本机数据库</p></div></div>
+    <div class="grid g-2">
+      <div class="grid">
+        <div class="panel">
+          <h2>模型</h2>
+          <div class="kv">
+            <span class="muted">提供方</span><span>Anthropic Claude <span class="chip ok">已连接</span></span>
+            <span class="muted">主模型</span><span class="num">claude-opus-5-5</span>
+            <span class="muted">轻量模型</span><span class="num">claude-haiku-5-5 <span class="small muted">（JD 解析、日报汇总）</span></span>
+            <span class="muted">API Key</span><span class="small muted">从环境变量 ANTHROPIC_API_KEY 读取</span>
+            <span class="muted">Embedding</span><span>Ollama · bge-m3 <span class="chip ok">本地运行</span></span>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>MCP 服务器</h2><button class="btn" type="button">+ 添加</button></div>
+          <div class="tbl"><table class="t">
+            <thead><tr><th>名称</th><th>方向</th><th>传输</th><th>状态</th></tr></thead>
+            <tbody>
+              <tr><td>filesystem</td><td>客户端</td><td>stdio</td><td><span class="dot ok"></span> 启用 · ~/study</td></tr>
+              <tr><td>fetch</td><td>客户端</td><td>stdio</td><td><span class="dot ok"></span> 启用</td></tr>
+              <tr><td>github</td><td>客户端</td><td>HTTP</td><td><span class="dot off"></span> 未启用</td></tr>
+              <tr><td>bucky（本应用）</td><td>服务端</td><td>HTTP :8080/mcp</td><td><span class="dot ok"></span> 只读工具已暴露</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-head"><h2>本月用量</h2><span class="small muted">预算 ¥100</span></div>
+          <div class="row" style="justify-content:space-between"><b class="num" style="font-size:22px">¥36.40</b><span class="small muted">已用 36%</span></div>
+          <div class="bar"><i style="width:36%"></i></div>
+          <div class="list small">
+            <div class="row" style="justify-content:space-between"><span>导师对话</span><span class="num">¥24.10</span></div>
+            <div class="row" style="justify-content:space-between"><span>总结生成</span><span class="num">¥6.80</span></div>
+            <div class="row" style="justify-content:space-between"><span>JD 解析 / 简历批改</span><span class="num">¥5.50</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>知识库</h2><button class="btn" type="button">上传文档</button></div>
+          <div class="list small">
+            <div class="row" style="justify-content:space-between"><span>知识卡片 · 86 篇</span><span class="chip ok">已索引</span></div>
+            <div class="row" style="justify-content:space-between"><span>JVM 读书笔记.pdf</span><span class="chip ok">已索引 · 142 块</span></div>
+            <div class="row" style="justify-content:space-between"><span>面试记录 · 6 条</span><span class="chip warn">2 条待索引</span></div>
+          </div>
+          <button class="btn" type="button">重建索引</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  // 路由
+  var views = ["dashboard", "jobs", "resume", "plan", "learning", "mentor", "summary", "prefs"];
+  function show() {
+    var v = location.hash.slice(1);
+    if (views.indexOf(v) < 0) v = "dashboard";
+    views.forEach(function (n) { document.getElementById("v-" + n).classList.toggle("on", n === v); });
+    document.querySelectorAll("#nav a").forEach(function (a) { a.classList.toggle("on", a.dataset.v === v); });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", show);
+  show();
+
+  // 主题切换
+  var root = document.documentElement;
+  document.getElementById("themeBtn").addEventListener("click", function () {
+    var dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+  });
+
+  // 任务勾选
+  document.querySelectorAll(".task input").forEach(function (cb) {
+    cb.addEventListener("change", function () { cb.closest(".task").classList.toggle("done", cb.checked); });
+  });
+
+  // 看板
+  var jobs = [
+    { s: 0, co: "北辰物流", ti: "Java 后端（高级）", pay: "30–40K", m: 71 },
+    { s: 0, co: "一点智能", ti: "AI 应用开发工程师", pay: "35–50K", m: 64 },
+    { s: 0, co: "蓝鲸游戏", ti: "服务端开发", pay: "28–38K", m: 69 },
+    { s: 1, co: "云帆电商", ti: "交易中台 Java", pay: "30–45K", m: 80 },
+    { s: 1, co: "知行教育", ti: "后端架构师", pay: "40–55K", m: 58 },
+    { s: 1, co: "海川保险", ti: "Java 开发专家", pay: "35–45K", m: 74 },
+    { s: 2, co: "北辰物流", ti: "调度系统 Java", pay: "30–42K", m: 76, n: "测评 11-15 截止", w: 1 },
+    { s: 2, co: "启明科技", ti: "Java 后端", pay: "25–35K", m: 72 },
+    { s: 3, co: "星河金融", ti: "高级 Java 工程师", pay: "35–45K", m: 78, n: "二面 明天 14:00", w: 1, id: 12 },
+    { s: 3, co: "云栈科技", ti: "LLM 应用后端", pay: "40–50K", m: 82, n: "HR 面 11-18" },
+    { s: 4, co: "启明科技", ti: "平台研发", pay: "32K × 15", m: 70, n: "11-20 前答复", w: 1 },
+    { s: 5, co: "鼎新软件", ti: "Java 开发", pay: "—", m: 60, n: "一面未通过", b: 1 }
+  ];
+  var cols = ["收藏", "已投递", "笔试/测评", "面试中", "Offer", "已结束"];
+  var board = document.getElementById("board");
+  cols.forEach(function (c, i) {
+    var col = document.createElement("div");
+    col.className = "col";
+    var list = jobs.filter(function (j) { return j.s === i; });
+    col.innerHTML = '<div class="col-h"><span>' + c + '</span><span class="num muted">' + list.length + "</span></div>";
+    list.forEach(function (j) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "jcard" + (j.id === 12 ? " sel" : "");
+      var mc = j.m >= 75 ? "ok" : j.m >= 65 ? "brand" : "";
+      b.innerHTML = '<span class="co">' + j.co + '</span><span class="ti">' + j.ti + '</span><div class="row"><span class="small num">' + j.pay + '</span><span class="chip ' + mc + '">匹配 ' + j.m + "%</span></div>" +
+        (j.n ? '<span class="chip ' + (j.b ? "bad" : j.w ? "warn" : "") + '">' + j.n + "</span>" : "");
+      b.addEventListener("click", function () {
+        document.querySelectorAll(".jcard").forEach(function (x) { x.classList.remove("sel"); });
+        b.classList.add("sel");
+        renderDetail(j);
+      });
+      col.appendChild(b);
+    });
+    board.appendChild(col);
+  });
+  function renderDetail(j) {
+    var d = document.getElementById("jobDetail");
+    d.innerHTML =
+      '<div class="panel-head"><div><span class="small muted">' + j.co + " · 上海 · 5–8 年</span><h2>" + j.ti + " · " + j.pay + '</h2></div><div class="row"><button class="btn" type="button">编辑</button><a class="btn" href="#resume">用定制简历</a><a class="btn primary ai" href="#mentor">模拟面试</a></div></div>' +
+      '<div class="jdetail"><div class="grid" style="gap:10px"><span class="label">JD 解析 · 技能要求</span>' +
+      '<div class="row"><span class="chip ok">Spring Cloud ✓</span><span class="chip ok">MySQL 调优 ✓</span><span class="chip ok">Kafka ✓</span><span class="chip ok">Redis ✓</span><span class="chip bad">JVM 调优 · 2/5</span><span class="chip bad">分布式事务 · 2/5</span><span class="chip">金融业务（加分）</span></div>' +
+      '<span class="label">差距清单</span><div class="list small"><div class="row" style="justify-content:space-between"><span>JVM 调优：差 2 级</span><button class="btn" type="button">加入学习计划</button></div><div class="row" style="justify-content:space-between"><span>分布式事务（TCC / Seata）：差 2 级</span><button class="btn" type="button">加入学习计划</button></div></div></div>' +
+      '<div class="grid" style="gap:10px"><span class="label">时间线</span><div class="timeline">' +
+      '<div><b>11-03</b> 投递 · 内推<br><span class="small muted">简历：Java 后端 · 金融版 v3</span></div>' +
+      '<div><b>11-06</b> 一面通过<br><span class="small muted">反馈：项目讲得清楚，JVM 偏弱。问题 6 道已入题库</span></div>' +
+      '<div class="next"><b>11-13 14:00</b> 二面（技术）<br><span class="small muted">下一步动作 · 已带入今日计划</span></div>' +
+      "</div></div></div>";
+  }
+  renderDetail(jobs[8]);
+
+  // 技能矩阵
+  var skills = [["Spring 生态", 4, 5], ["Java 并发", 3, 4], ["MySQL", 3, 4], ["Redis", 3, 4], ["JVM", 2, 4], ["分布式事务", 2, 4], ["Spring AI / LLM", 2, 4], ["算法", 3, 3], ["系统设计", 2, 4]];
+  var sk = document.getElementById("skills");
+  skills.forEach(function (s) {
+    var cells = "";
+    for (var i = 1; i <= 5; i++) cells += '<i class="' + (i <= s[1] ? "cur" : i <= s[2] ? "tgt" : "") + '"></i>';
+    var gap = s[2] - s[1];
+    sk.insertAdjacentHTML("beforeend", '<div class="skill"><span>' + s[0] + '</span><div class="lv">' + cells + '</div><span class="small num ' + (gap >= 2 ? "" : "muted") + '" style="' + (gap >= 2 ? "color:var(--bad)" : "") + '">' + s[1] + "/" + s[2] + (gap >= 2 ? " ↑" : "") + "</span></div>");
+  });
+
+  // 热力图（固定种子的示例数据）
+  var heat = document.getElementById("heat"), seed = 7;
+  function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  for (var k = 0; k < 84; k++) {
+    var r = rnd(), lv = k > 80 ? 0 : r < .18 ? 0 : r < .4 ? 1 : r < .68 ? 2 : r < .9 ? 3 : 4;
+    if (k > 70 && lv === 0 && k <= 80) lv = 2;
+    heat.insertAdjacentHTML("beforeend", '<i class="' + (lv ? "l" + lv : "") + '" title="' + lv + 'h"></i>');
+  }
+
+  // 番茄钟
+  var left = 1500, timer = null, pomo = document.getElementById("pomo"), pb = document.getElementById("pomoBtn");
+  function draw() { pomo.textContent = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0"); }
+  pb.addEventListener("click", function () {
+    if (timer) { clearInterval(timer); timer = null; pb.textContent = "继续"; return; }
+    pb.textContent = "暂停";
+    timer = setInterval(function () { if (left > 0) { left--; draw(); } }, 1000);
+  });
+  document.getElementById("pomoReset").addEventListener("click", function () { clearInterval(timer); timer = null; left = 1500; draw(); pb.textContent = "开始"; });
+
+  // 单选组：模式、总结切换
+  [["#modes", "button"], ["#sumTabs", "button"]].forEach(function (g) {
+    var bs = document.querySelectorAll(g[0] + " " + g[1]);
+    bs.forEach(function (b) { b.addEventListener("click", function () { bs.forEach(function (x) { x.classList.remove("on"); }); b.classList.add("on"); }); });
+  });
+})();
+</script>
+</body>
+</html>
