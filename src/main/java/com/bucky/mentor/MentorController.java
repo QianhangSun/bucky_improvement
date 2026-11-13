@@ -1,7 +1,5 @@
 package com.bucky.mentor;
 
-import java.util.Map;
-
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -24,14 +22,15 @@ public class MentorController {
     }
 
     @GetMapping("/api/mentor/hello")
-    public Map<String, Object> hello(@RequestParam(defaultValue = "用一句话介绍你自己") String q) {
+    public HelloResponse hello(@RequestParam(defaultValue = "用一句话介绍你自己") String q) {
         // Prompt 是一次请求的完整内容；这里只有一条用户消息
         ChatResponse response = chatModel.call(new Prompt(q));
 
         // ChatResponse 除了回答文本，还带着元数据：实际用的模型、消耗的 token
-        return Map.of(
-                "answer", response.getResult().getOutput().getText(),
-                "model", response.getMetadata().getModel(),
-                "usage", response.getMetadata().getUsage());
+        // 以前用 Map.of("answer", ...) 返回，键名写错编译器发现不了；换成 record 后字段由类型保证
+        return new HelloResponse(
+                response.getResult().getOutput().getText(),
+                response.getMetadata().getModel(),
+                response.getMetadata().getUsage());
     }
 }

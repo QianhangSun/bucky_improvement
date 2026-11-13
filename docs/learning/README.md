@@ -6,8 +6,8 @@
 |---|---|---|---|---|
 | 01 | 项目骨架 | （还没用到 Spring AI）Maven BOM、自动配置是什么 | 能启动的空应用 | ✅ |
 | 02 | 第一次调用大模型 | `ChatModel`、starter 与自动配置、`application.yml` 配模型 | 能回答一句话的接口 | ✅ |
-| 03 | ChatClient 入门 | `ChatClient` 链式 API、system / user 消息、`PromptTemplate` | 有“导师人设”的回答 | ⏳ |
-| 04 | 流式输出 | `.stream()`、`Flux`、SSE | 回答逐字出现 | |
+| 03 | ChatClient 入门 | `ChatClient` 链式 API、system / user 消息、`PromptTemplate` | 有“导师人设”的回答 | ✅ |
+| 04 | 流式输出 | `.stream()`、`Flux`、SSE | 回答逐字出现 | ⏳ |
 | 05 | Advisor | Advisor 拦截链、`SimpleLoggerAdvisor`、自定义 Advisor | 打印请求日志、统计 token 用量 | |
 | 06 | 会话记忆 | `ChatMemory`、`MessageChatMemoryAdvisor`、会话 ID | 导师记得你上一句话说了什么 | |
 | 07 | 结构化输出 | `.entity(Class)`、`BeanOutputConverter` | 让模型返回 Java 对象（如学习建议列表） | |
@@ -28,7 +28,7 @@
 - 模型：DeepSeek `deepseek-v4-flash`（Key 放在环境变量 `DEEPSEEK_API_KEY`）。PRD 写的是 Claude，原因见第 02 课
 
 ## 怎么跟
-1. 先读当课笔记（`docs/learning/NN-*.md`）
+1. 先读当课笔记（`docs/learning/NN-*.md`）；做完的练习和点评在 `NN-review.md`
 2. 对照笔记看代码，代码里的注释就是讲解
 3. 自己跑一遍，做课后练习
 4. 有问题直接问；懂了说“下一课”

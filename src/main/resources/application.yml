@@ -13,6 +13,8 @@ spring:
         # 模型参数：自动配置把这些值做成默认选项，每次调用都会带上
         model: deepseek-v4-flash   # 快且便宜；需要更强推理时换 deepseek-v4-pro
         max-tokens: 1024           # 单次回答最多生成多少 token，防止回答过长、费用失控
+        thinking:                  # 默认关闭思考：日常问答更快更省；需要时在单次调用里打开（见第 03 课）
+          type: disabled
 
 server:
   port: 8080
