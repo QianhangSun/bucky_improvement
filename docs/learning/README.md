@@ -8,8 +8,8 @@
 | 02 | 第一次调用大模型 | `ChatModel`、starter 与自动配置、`application.yml` 配模型 | 能回答一句话的接口 | ✅ |
 | 03 | ChatClient 入门 | `ChatClient` 链式 API、system / user 消息、`PromptTemplate` | 有“导师人设”的回答 | ✅ |
 | 04 | 流式输出 | `.stream()`、`Flux`、SSE | 回答逐字出现 | ✅ |
-| 05 | Advisor | Advisor 拦截链、`SimpleLoggerAdvisor`、自定义 Advisor | 打印请求日志、统计 token 用量 | ⏳ |
-| 06 | 会话记忆 | `ChatMemory`、`MessageChatMemoryAdvisor`、会话 ID | 导师记得你上一句话说了什么 | |
+| 05 | Advisor | Advisor 拦截链、`SimpleLoggerAdvisor`、自定义 Advisor | 打印请求日志、统计 token 用量 | ✅ |
+| 06 | 会话记忆 | `ChatMemory`、`MessageChatMemoryAdvisor`、会话 ID | 导师记得你上一句话说了什么 | ⏳ |
 | 07 | 结构化输出 | `.entity(Class)`、`BeanOutputConverter` | 让模型返回 Java 对象（如学习建议列表） | |
 | 08 | 上下文组装 | 动态 system prompt、模板变量 | 导师能看到你的学习进度（先用假数据） | |
 | 09 | 工具调用 | `@Tool`、`ToolCallback`、工具调用循环 | 导师自己去查计划和技能 | |
@@ -25,6 +25,7 @@
 ## 版本
 - Java 21.0.6 · Maven 3.9.14
 - Spring Boot **4.1.2** · Spring AI **2.0.2**（2026-11-12 在 Maven Central 核对过）
+- 数据库：PostgreSQL 17.12 + pgvector 0.8.7，源码编译在 `~/local/pgsql-17`，库名 `bucky`（启动命令见第 05 课）
 - 模型：DeepSeek `deepseek-v4-flash`（Key 放在环境变量 `DEEPSEEK_API_KEY`）。PRD 写的是 Claude，原因见第 02 课
 
 ## 怎么跟

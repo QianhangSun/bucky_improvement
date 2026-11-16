@@ -1,6 +1,11 @@
 spring:
   application:
     name: bucky-improvement
+  datasource:
+    # 本机源码编译的 PostgreSQL（~/local/pgsql-17，见第 05 课），库名 bucky。用户名默认是当前系统用户，本机连接不需要密码
+    url: ${BUCKY_DB_URL:jdbc:postgresql://localhost:5432/bucky}
+    username: ${BUCKY_DB_USER:${USER}}
+    password: ${BUCKY_DB_PASSWORD:}
   threads:
     virtual:
       enabled: true   # Java 21 虚拟线程：每个 HTTP 请求跑在虚拟线程上，调用大模型这种“长时间等待”的请求不会占满线程池
@@ -18,3 +23,8 @@ spring:
 
 server:
   port: 8080
+
+logging:
+  level:
+    # SimpleLoggerAdvisor 用 DEBUG 打日志，默认 INFO 看不到，这里单独打开
+    org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor: DEBUG
