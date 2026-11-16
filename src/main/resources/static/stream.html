@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>流式对比</title>
+<style>
+  body { font: 15px/1.6 system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+  input { width: 100%; padding: 8px; box-sizing: border-box; }
+  .row { display: flex; gap: 12px; margin-top: 12px; }
+  .col { flex: 1; min-width: 0; }
+  pre { white-space: pre-wrap; background: #f5f5f5; padding: 12px; min-height: 120px; }
+  small { color: #666; }
+</style>
+</head>
+<body>
+<h3>第 04 课：非流式 vs 流式</h3>
+<input id="q" value="HashMap 和 ConcurrentHashMap 有什么区别">
+<button onclick="run()">同时发送</button>
+<div class="row">
+  <div class="col"><b>/chat（非流式）</b> <small id="t1"></small><pre id="a1"></pre></div>
+  <div class="col"><b>/chat/stream（流式）</b> <small id="t2"></small><pre id="a2"></pre></div>
+</div>
+<script>
+function run() {
+  const q = encodeURIComponent(document.getElementById('q').value);
+  const start = performance.now();
+  const sec = () => ((performance.now() - start) / 1000).toFixed(1) + 's';
+  a1.textContent = '等待中…'; a2.textContent = ''; t1.textContent = t2.textContent = '';
+
+  // 非流式：等整个回答生成完，一次性拿到
+  fetch('/api/mentor/chat?q=' + q).then(r => r.text()).then(text => {
+    a1.textContent = text; t1.textContent = '全部到达 ' + sec();
+  });
+
+  // 流式：EventSource 是浏览器自带的 SSE 客户端，每收到一个 data: 事件就触发一次 onmessage
+  const es = new EventSource('/api/mentor/chat/stream?q=' + q);
+  let first = true;
+  es.onmessage = e => {
+    if (first) { t2.textContent = '首字 ' + sec(); first = false; }
+    a2.textContent += JSON.parse(e.data).text;
+  };
+  // 服务端发完会断开连接，EventSource 默认会自动重连，所以这里要主动关掉
+  es.onerror = () => { es.close(); if (!first) t2.textContent += '，结束 ' + sec(); };
+}
+</script>
+</body>
+</html>
