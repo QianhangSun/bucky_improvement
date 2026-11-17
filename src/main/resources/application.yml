@@ -10,6 +10,12 @@ spring:
     virtual:
       enabled: true   # Java 21 虚拟线程：每个 HTTP 请求跑在虚拟线程上，调用大模型这种“长时间等待”的请求不会占满线程池
   ai:
+    chat:
+      memory:
+        repository:
+          jdbc:
+            # 表由 Flyway 的 V2 脚本建，不让 Spring AI 自己建（默认只对 H2 这类内嵌数据库自动建表）
+            initialize-schema: never
     deepseek:
       # 连接配置：密钥从环境变量读，不要把密钥写进代码仓库
       api-key: ${DEEPSEEK_API_KEY}

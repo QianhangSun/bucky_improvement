@@ -9,8 +9,8 @@
 | 03 | ChatClient 入门 | `ChatClient` 链式 API、system / user 消息、`PromptTemplate` | 有“导师人设”的回答 | ✅ |
 | 04 | 流式输出 | `.stream()`、`Flux`、SSE | 回答逐字出现 | ✅ |
 | 05 | Advisor | Advisor 拦截链、`SimpleLoggerAdvisor`、自定义 Advisor | 打印请求日志、统计 token 用量 | ✅ |
-| 06 | 会话记忆 | `ChatMemory`、`MessageChatMemoryAdvisor`、会话 ID | 导师记得你上一句话说了什么 | ⏳ |
-| 07 | 结构化输出 | `.entity(Class)`、`BeanOutputConverter` | 让模型返回 Java 对象（如学习建议列表） | |
+| 06 | 会话记忆 | `ChatMemory`、`MessageChatMemoryAdvisor`、会话 ID | 导师记得你上一句话说了什么 | ✅ |
+| 07 | 结构化输出 | `.entity(Class)`、`BeanOutputConverter` | 让模型返回 Java 对象（如学习建议列表） | ⏳ |
 | 08 | 上下文组装 | 动态 system prompt、模板变量 | 导师能看到你的学习进度（先用假数据） | |
 | 09 | 工具调用 | `@Tool`、`ToolCallback`、工具调用循环 | 导师自己去查计划和技能 | |
 | 10 | 人在回路 | 工具返回“提议”而不是直接执行 | 导师改数据前先问你 | |
